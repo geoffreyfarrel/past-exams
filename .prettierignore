@@ -1,0 +1,14 @@
+# Build output
+.next/
+dist/
+out/
+
+# Dependencies
+node_modules/
+
+# Config files
+next.config.mjs
+next.config.js
+
+# Scripts (Optional: ignore your seeding script if it uses non-standard patterns)
+scripts/
