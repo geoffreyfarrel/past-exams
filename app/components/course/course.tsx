@@ -42,7 +42,7 @@ export default function Course(props: CourseProps): ReactNode {
   if (!course || !exams) {
     return (
       <div className="flex justify-center h-full items-center p-12">
-        <Spinner size="lg" />
+        <Spinner size="lg" variant="dots" />
       </div>
     );
   }

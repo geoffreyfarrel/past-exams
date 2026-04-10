@@ -16,14 +16,12 @@ export default function Exam(props: ExamProps): ReactNode {
 
   const [pdfUrl, setPdfUrl] = useState<string | undefined>(undefined);
   const [exam, setExam] = useState<ExamType>();
-  const [isLoading, setIsLoading] = useState(false);
 
   const supabase = createClient();
 
   useEffect(() => {
     if (courseId && examId) {
       const fetchExamData = async (): Promise<void> => {
-        setIsLoading(true);
         try {
           const examData = await MajorService.getExamById(examId, supabase);
           setExam(examData);
@@ -39,7 +37,6 @@ export default function Exam(props: ExamProps): ReactNode {
         } catch (error) {
           console.error(error);
         } finally {
-          setIsLoading(false);
         }
       };
 
@@ -52,7 +49,7 @@ export default function Exam(props: ExamProps): ReactNode {
   if (!pdfUrl || !exam)
     return (
       <div className="flex justify-center h-full items-center p-12">
-        <Spinner size="lg" />
+        <Spinner size="lg" variant="dots" />
       </div>
     );
 

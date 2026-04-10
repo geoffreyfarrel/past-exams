@@ -22,13 +22,19 @@ const registerSchema = z.object({
 export async function registerUser(
   formData: FormData,
 ): Promise<{ success?: boolean; error?: string }> {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const username = formData.get('username') as string;
+  const rawData = Object.fromEntries(formData.entries());
 
-  if (!email || !password || !username) {
-    return { success: false, error: 'All fields are required.' };
+  const validatedFields = registerSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+
+    const firstErrorMessage = Object.values(fieldErrors).flat()[0];
+
+    return { error: firstErrorMessage || 'Validation failed' };
   }
+
+  const { username, email, password } = validatedFields.data;
 
   const supabase = await createClient();
 

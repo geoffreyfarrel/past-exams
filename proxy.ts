@@ -3,7 +3,9 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request: {
+      headers: request.headers,
+    },
   });
 
   const supabase = createServerClient(
@@ -16,7 +18,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
+
+          response = NextResponse.next({
+            request,
+          });
+
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
           );
