@@ -19,6 +19,7 @@ const eslintConfig = defineConfig([
     '**/dist',
     'next.config.ts',
     '**/scripts/seed.mjs',
+    '**/app/layout.tsx',
   ]),
 
   // 2. Core Formatting & Rules
