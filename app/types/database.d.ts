@@ -1,3 +1,14 @@
+enum CourseYear {
+  FRESHMAN = 'freshman',
+  SOPHOMORE = 'sophomore',
+  JUNIOR = 'junior',
+  SENIOR = 'senior',
+}
+
+enum ProfileRole {
+  STUDENT = 'student',
+  ADMIN = 'admin',
+}
 export interface College {
   id: string;
   name: string;
@@ -8,13 +19,6 @@ export interface Major {
   name: string;
   code: string;
   colleges: College | College[];
-}
-
-enum CourseYear {
-  FRESHMAN = 'freshman',
-  SOPHOMORE = 'sophomore',
-  JUNIOR = 'junior',
-  SENIOR = 'senior',
 }
 
 export interface Course {
@@ -35,3 +39,9 @@ export interface Exam {
   year: number;
   semester: string;
 }
+
+export type Profile = {
+  id: string;
+  username: string;
+  role: ProfileRole;
+};

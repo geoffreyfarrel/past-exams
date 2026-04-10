@@ -2,10 +2,12 @@
 
 import { Navbar, NavbarContent } from '@heroui/navbar';
 import { Avatar, Button, Select, SelectItem } from '@heroui/react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { ChangeEvent, ReactNode, useCallback, useEffect, useState } from 'react';
 import { RxHamburgerMenu } from 'react-icons/rx';
+
+import { useAuth } from '@/app/contexts/auth-context';
 
 import { MAJORS } from './layout-constants';
 
@@ -16,7 +18,7 @@ interface LayoutHeaderProps {
 export default function LayoutHeader({ onMenuToggle }: LayoutHeaderProps): ReactNode {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { profile } = useAuth();
 
   const getActiveKey = useCallback(() => {
     const segment = pathname.split('/')[1];
@@ -78,14 +80,16 @@ export default function LayoutHeader({ onMenuToggle }: LayoutHeaderProps): React
       </NavbarContent>
 
       <NavbarContent className="w-12" justify="end">
-        <Avatar
-          isBordered
-          src="/avatar"
-          name={session?.user?.name || 'Avatar'}
-          showFallback
-          color="primary"
-          size="sm"
-        />
+        <Link href={profile ? '#' : '/auth/login'}>
+          <Avatar
+            isBordered
+            src="/avatar"
+            name={profile?.username || 'Avatar'}
+            showFallback
+            color="primary"
+            size="sm"
+          />
+        </Link>
       </NavbarContent>
     </Navbar>
   );
