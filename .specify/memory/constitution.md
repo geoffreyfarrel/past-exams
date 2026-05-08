@@ -1,15 +1,13 @@
 <!--
 Sync Impact Report:
-- Version change: 1.2.0 -> 1.3.0
-- Modified principles:
-  - I. Code Quality & Best Practices (Expanded to mandate explicit ESLint compliance like explicit return types for AI generation)
-- Added sections: None
+- Version change: 1.3.0 -> 1.4.0
+- Modified principles: None
+- Added sections: 
+  - VI. Data & File Standards
 - Removed sections: None
-- Templates requiring updates:
-  - ✅ `.specify/templates/plan-template.md` (Updated Constitution Check for ESLint)
+- Templates requiring updates: None (This is a domain-specific operational rule that naturally propagates through spec/task requirements)
 - Follow-up TODOs: None
 -->
-
 # pastexams Constitution
 
 ## Core Principles
@@ -47,8 +45,13 @@ Prioritize the community's most widely used and proven libraries for any new dep
 Run tests after every successful implementation of a task and check for errors before marking the task complete.
 Rationale: Continuous testing prevents regressions and ensures system stability as new features are added.
 
+### VI. Data & File Standards
+
+The uploaded file format MUST strictly follow the naming convention: `year_semester_coursename_professorname_midorfinal` (e.g., `2026_Spring_微積分 Calculus_林宏祥_Final`).
+Rationale: Enforcing a rigid and consistent file naming structure ensures that downloaded documents are easily identifiable and systematically organized without collisions, improving the overall user and contributor experience.
+
 ## Governance
 
 Amendments to this constitution require documentation, approval, and a version bump. All pull requests and code reviews must verify compliance with the Core Principles outlined above.
 
-**Version**: 1.3.0 | **Ratified**: 2026-05-08 | **Last Amended**: 2026-05-08
+**Version**: 1.4.0 | **Ratified**: 2026-05-08 | **Last Amended**: 2026-05-08
