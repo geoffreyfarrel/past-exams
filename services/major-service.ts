@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Course, Exam, Major } from '@/app/types/database';
 
 export const MajorService = {
-  async getMajorDetails(slug: string, supabase: SupabaseClient): Promise<Major | null> {
+  async getMajorDetails(supabase: SupabaseClient, slug?: string): Promise<Major | null> {
     const { data, error } = await supabase
       .from('majors')
       .select(
@@ -17,7 +17,7 @@ export const MajorService = {
         )
       `,
       )
-      .eq('code', slug.toUpperCase())
+      .eq('code', slug?.toUpperCase())
       .maybeSingle();
 
     if (error) {
@@ -82,5 +82,45 @@ export const MajorService = {
     }
 
     return data as Exam | null;
+  },
+
+  async getAllMajors(supabase: SupabaseClient): Promise<Major[]> {
+    const { data, error } = await supabase.from('majors').select('id, name, code').order('name');
+
+    if (error) {
+      return [];
+    }
+
+    return data as Major[];
+  },
+
+  async getCoursesByMajorId(
+    majorId: string,
+    supabase: SupabaseClient,
+    options?: { search?: string; page?: number; pageSize?: number },
+  ): Promise<Course[]> {
+    const { search = '', page = 0, pageSize = 10 } = options ?? {};
+
+    let query = supabase
+      .from('courses')
+      .select('id, name, majors!inner(id)')
+      .eq('majors.id', majorId)
+      .order('name');
+
+    if (search.length >= 3) {
+      query = query.ilike('name', `%${search}%`);
+    }
+
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
+
+    const { data, error } = await query;
+
+    if (error) {
+      return [];
+    }
+
+    return data as unknown as Course[];
   },
 };

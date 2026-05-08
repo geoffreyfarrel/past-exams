@@ -14,7 +14,8 @@ import { useRouter } from 'next/navigation';
 import React, { ChangeEvent, FormEvent, ReactElement, useEffect, useRef, useState } from 'react';
 
 import { getPresignedUploadUrl, saveExamMetadata } from '@/app/actions/upload-action';
-import { Course } from '@/app/types/database';
+import { Major } from '@/app/types/database';
+import { MajorService } from '@/services/major-service';
 import { createClient } from '@/utils/supabase/client';
 
 export function ExamUploadForm(): ReactElement {
@@ -28,14 +29,26 @@ export function ExamUploadForm(): ReactElement {
   const [error, setError] = useState('');
 
   // Major and Course state
-  const [majors, setMajors] = useState<{ id: string; name: string; code: string }[]>([]);
-  const [selectedMajorCode, setSelectedMajorCode] = useState('');
+  const [majors, setMajors] = useState<Major[]>([]);
+  const [majorSearch, setMajorSearch] = useState('');
+  const [selectedMajorId, setSelectedMajorId] = useState('');
+
+  // Filter majors client-side as user types
+  const filteredMajors = majors.filter((m) =>
+    m.name.toLowerCase().includes(majorSearch.toLowerCase()),
+  );
 
   const [courses, setCourses] = useState<{ id: string; name: string }[]>([]);
+  const [courseInputValue, setCourseInputValue] = useState('');
   const [courseSearch, setCourseSearch] = useState('');
   const [isCoursesLoading, setIsCoursesLoading] = useState(false);
   const [coursePage, setCoursePage] = useState(0);
   const [hasMoreCourses, setHasMoreCourses] = useState(true);
+
+  // Filter courses client-side as user types (on top of server-side results)
+  const filteredCourses = courses.filter((c) =>
+    c.name.toLowerCase().includes(courseInputValue.toLowerCase()),
+  );
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,10 +56,8 @@ export function ExamUploadForm(): ReactElement {
   useEffect(() => {
     const fetchMajors = async (): Promise<void> => {
       const supabase = createClient();
-      const { data } = await supabase.from('majors').select('id, name, code').order('name');
-      if (data) {
-        setMajors(data);
-      }
+      const data = await MajorService.getAllMajors(supabase);
+      setMajors(data);
     };
 
     fetchMajors();
@@ -54,7 +65,7 @@ export function ExamUploadForm(): ReactElement {
 
   // Fetch courses when major, search, or page changes
   useEffect(() => {
-    if (!selectedMajorCode) {
+    if (!selectedMajorId) {
       setCourses([]);
 
       return;
@@ -67,46 +78,36 @@ export function ExamUploadForm(): ReactElement {
     const fetchCourses = async (): Promise<void> => {
       setIsCoursesLoading(true);
       const supabase = createClient();
+      const data = await MajorService.getCoursesByMajorId(selectedMajorId, supabase, {
+        search: courseSearch,
+        page: coursePage,
+        pageSize: 10,
+      });
 
-      let query = supabase
-        .from('courses')
-        .select('id, name, majors!inner(code)')
-        .eq('majors.code', selectedMajorCode)
-        .order('name');
+      if (coursePage === 0) {
+        setCourses(data);
+      } else {
+        setCourses((prev) => {
+          const existingIds = new Set(prev.map((c) => c.id));
+          const newCourses = data.filter((c) => !existingIds.has(c.id));
 
-      if (courseSearch.length >= 3) {
-        query = query.ilike('name', `%${courseSearch}%`);
+          return [...prev, ...newCourses];
+        });
       }
 
-      const from = coursePage * 10;
-      const to = from + 9;
-      query = query.range(from, to);
-
-      const { data } = (await query) as { data: Course[] };
-      if (data) {
-        if (coursePage === 0) {
-          setCourses(data);
-        } else {
-          setCourses((prev) => {
-            const existingIds = new Set(prev.map((c) => c.id));
-            const newCourses = data.filter((c) => !existingIds.has(c.id));
-
-            return [...prev, ...newCourses];
-          });
-        }
-
-        setHasMoreCourses(data.length === 10);
-      }
-
+      setHasMoreCourses(data.length === 10);
       setIsCoursesLoading(false);
     };
 
     fetchCourses();
-  }, [selectedMajorCode, courseSearch, coursePage]);
+  }, [selectedMajorId, courseSearch, coursePage]);
 
   const handleCourseSearchChange = (value: string): void => {
     if (value === courseId) return;
 
+    setCourseInputValue(value);
+
+    // Trigger server-side fetch with debounce for paginated results
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setCourseSearch(value);
@@ -215,12 +216,14 @@ export function ExamUploadForm(): ReactElement {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Select
+          <Autocomplete
             label="Major"
-            placeholder="Select a major"
-            selectedKeys={selectedMajorCode ? [selectedMajorCode] : []}
-            onChange={(e): void => {
-              setSelectedMajorCode(e.target.value);
+            placeholder="Search a major..."
+            items={filteredMajors}
+            selectedKey={selectedMajorId}
+            onInputChange={(val): void => setMajorSearch(val)}
+            onSelectionChange={(key): void => {
+              setSelectedMajorId((key as string) ?? '');
               setCourseId(''); // Reset course when major changes
               setCourseSearch('');
               setCoursePage(0);
@@ -228,17 +231,19 @@ export function ExamUploadForm(): ReactElement {
             isRequired
             variant="bordered"
           >
-            {majors.map((major) => (
-              <SelectItem key={major.code}>{major.name}</SelectItem>
-            ))}
-          </Select>
+            {(major) => (
+              <AutocompleteItem key={major.id} textValue={major.name}>
+                {major.name}
+              </AutocompleteItem>
+            )}
+          </Autocomplete>
 
           <Autocomplete
             label="Course"
             placeholder="Search a course..."
-            items={courses}
+            items={filteredCourses}
             isLoading={isCoursesLoading}
-            isDisabled={!selectedMajorCode}
+            isDisabled={!selectedMajorId}
             onInputChange={handleCourseSearchChange}
             selectedKey={courseId}
             onSelectionChange={(key): void => setCourseId((key as string) || '')}
@@ -253,7 +258,11 @@ export function ExamUploadForm(): ReactElement {
               },
             }}
           >
-            {(course) => <AutocompleteItem key={course.name}>{course.name}</AutocompleteItem>}
+            {(course) => (
+              <AutocompleteItem key={course.id} textValue={course.name}>
+                {course.name}
+              </AutocompleteItem>
+            )}
           </Autocomplete>
 
           <div className="grid grid-cols-2 gap-4">

@@ -76,6 +76,8 @@ description: 'Task list for NTPU Past Exams Storage implementation'
 - [x] T019 [US2] Add Major select component to ExamUploadForm that fetches all majors from the database
 - [x] T020 [US2] Update Course select in ExamUploadForm to filter by selected Major, include a search bar(with debounce and min 3 chars), and implement infinite scroll pagination (max 10 items per fetch)
 - [x] T021 [US2] Review all database queries and ensure corresponding TypeScript interfaces/types exist in database.d.ts, adding them if missing
+- [x] T022 [US2] Update Major Select in ExamUploadForm to use Autocomplete (searchable) and use major ID instead of code for state and course filtering
+- [x] T023 [US2] Add `getAllMajors` and `getCoursesByMajorId` (with search + pagination) to `services/major-service.ts` and refactor `ExamUploadForm.tsx` to use them instead of inline Supabase queries
 
 ---
 
