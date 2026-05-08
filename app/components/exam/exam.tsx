@@ -15,7 +15,7 @@ export default function Exam(props: ExamProps): ReactNode {
   const { courseId, examId } = props;
 
   const [pdfUrl, setPdfUrl] = useState<string | undefined>(undefined);
-  const [exam, setExam] = useState<ExamType>();
+  const [exam, setExam] = useState<ExamType | null>(null);
 
   const supabase = createClient();
 
@@ -27,15 +27,15 @@ export default function Exam(props: ExamProps): ReactNode {
           setExam(examData);
 
           if (examData?.file_key) {
-            const { url, error } = await getExamDownloadUrl(examData.file_key);
+            const { url } = await getExamDownloadUrl(examData.file_key);
             if (url) {
               setPdfUrl(url);
             } else {
-              console.error(error);
+              // error
             }
           }
-        } catch (error) {
-          console.error(error);
+        } catch {
+          // error
         } finally {
         }
       };
@@ -43,8 +43,6 @@ export default function Exam(props: ExamProps): ReactNode {
       fetchExamData();
     }
   }, [courseId, examId, supabase]);
-
-  console.log('log: ', pdfUrl);
 
   if (!pdfUrl || !exam)
     return (
@@ -55,7 +53,9 @@ export default function Exam(props: ExamProps): ReactNode {
 
   return (
     <div>
-      <h2 className="font-bold text-3xl upper mb-4 text-center">{exam?.name}</h2>
+      <h2 className="font-bold text-3xl uppercase mb-4 text-center">
+        {exam?.course_id} - {exam?.year} {exam?.semester}
+      </h2>
       {pdfUrl && (
         <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-2xl relative">
           <iframe src={pdfUrl} className="w-full h-screen" title="Exam Viewer" />

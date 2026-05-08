@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 
@@ -18,46 +19,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    const getProfile = async (userId: string): Promise<void> => {
+  // Memoize getProfile so it can be reused safely in the effect
+  const fetchProfile = useCallback(
+    async (userId: string) => {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
-      if (!error) setProfile(data);
-    };
+      if (!error && data) {
+        setProfile(data as Profile);
+      } else {
+        setProfile(null);
+      }
+    },
+    [supabase],
+  );
 
-    const fetchInitialUser = async (): Promise<void> => {
+  useEffect(() => {
+    let mounted = true;
+
+    const initializeAuth = async (): Promise<void> => {
+      // 1. Check current session
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user) {
-        await getProfile(user.id);
-      }
 
-      setIsLoading(false);
-    };
-
-    fetchInitialUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (event: unknown, session: { user: { id: string } | null }) => {
-        if (session?.user) {
-          await getProfile(session.user.id);
+      if (mounted) {
+        if (user) {
+          await fetchProfile(user.id);
         } else {
           setProfile(null);
         }
 
         setIsLoading(false);
-      },
-    );
+      }
+    };
 
-    return (): void => subscription.unsubscribe();
-  }, [supabase]);
+    initializeAuth();
+
+    // 2. Listen for Auth Changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+      if (!mounted) return;
+
+      // Reset loading if we're waiting for a new profile fetch
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+      }
+
+      setIsLoading(false);
+    });
+
+    return (): void => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase, fetchProfile]);
 
   return <AuthContext.Provider value={{ profile, isLoading }}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = (): AuthContextType => {
-  return useContext(AuthContext);
-};
+export const useAuth = (): AuthContextType => useContext(AuthContext);

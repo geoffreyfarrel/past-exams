@@ -1,14 +1,15 @@
-enum CourseYear {
+export enum CourseYear {
   FRESHMAN = 'freshman',
   SOPHOMORE = 'sophomore',
   JUNIOR = 'junior',
   SENIOR = 'senior',
 }
 
-enum ProfileRole {
+export enum ProfileRole {
   STUDENT = 'student',
   ADMIN = 'admin',
 }
+
 export interface College {
   id: string;
   name: string;
@@ -18,7 +19,7 @@ export interface Major {
   id: string;
   name: string;
   code: string;
-  colleges: College | College[];
+  colleges?: College | College[];
 }
 
 export interface Course {
@@ -26,18 +27,18 @@ export interface Course {
   name: string;
   category: CourseYear;
   course_type: 'required' | 'elective';
+  majors?: { code: string } | { code: string }[];
 }
 
 export interface Exam {
   id: string;
   course_id: string;
-  uploader: string;
-  name: string;
-  year: number;
-  file_key: string;
-  file_type: string;
   year: number;
   semester: string;
+  professor_name: string;
+  file_key: string;
+  uploaded_by: string;
+  created_at: string;
 }
 
 export type Profile = {

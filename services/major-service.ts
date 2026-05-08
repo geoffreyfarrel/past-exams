@@ -1,9 +1,9 @@
-/* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { SupabaseClient } from '@supabase/supabase-js';
 
+import { Course, Exam, Major } from '@/app/types/database';
+
 export const MajorService = {
-  async getMajorDetails(slug: string, supabase: SupabaseClient) {
+  async getMajorDetails(slug: string, supabase: SupabaseClient): Promise<Major | null> {
     const { data, error } = await supabase
       .from('majors')
       .select(
@@ -21,15 +21,13 @@ export const MajorService = {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching major:', error);
-
       return null;
     }
 
-    return data;
+    return data as Major | null;
   },
 
-  async getCoursesByMajor(majorCode: string, supabase: SupabaseClient) {
+  async getCoursesByMajor(majorCode: string, supabase: SupabaseClient): Promise<Course[]> {
     // We use !inner to filter the courses by the linked major's code
     const { data, error } = await supabase
       .from('courses')
@@ -46,27 +44,23 @@ export const MajorService = {
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('Error fetching courses:', error);
-
       return [];
     }
 
-    return data;
+    return data as Course[];
   },
 
-  async getCourseById(courseId: string, supabase: SupabaseClient) {
+  async getCourseById(courseId: string, supabase: SupabaseClient): Promise<Course | null> {
     const { data, error } = await supabase.from('courses').select('*').eq('id', courseId).single();
 
     if (error) {
-      console.error('Error fetching course:', error);
-
-      return [];
+      return [] as unknown as Course | null;
     }
 
-    return data;
+    return data as Course | null;
   },
 
-  async getExamsByCourse(courseId: string, supabase: SupabaseClient) {
+  async getExamsByCourse(courseId: string, supabase: SupabaseClient): Promise<Exam[]> {
     const { data, error } = await supabase
       .from('exams')
       .select('*')
@@ -74,23 +68,19 @@ export const MajorService = {
       .order('year', { ascending: false });
 
     if (error) {
-      console.error('Error fetching exams:', error);
-
       return [];
     }
 
-    return data;
+    return data as Exam[];
   },
 
-  async getExamById(examId: string, supabase: SupabaseClient) {
+  async getExamById(examId: string, supabase: SupabaseClient): Promise<Exam | null> {
     const { data, error } = await supabase.from('exams').select('*').eq('id', examId).single();
 
     if (error) {
-      console.error('Error fetching exam:', error);
-
       return null;
     }
 
-    return data;
+    return data as Exam | null;
   },
 };

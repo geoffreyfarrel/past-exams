@@ -29,8 +29,8 @@ export default function Course(props: CourseProps): ReactNode {
         try {
           const examData = await MajorService.getExamsByCourse(courseId, supabase);
           setExams(examData);
-        } catch (error) {
-          console.error('Error fetching exam data:', error);
+        } catch {
+          // console.error('Error fetching exam data:', error);
         }
       };
 

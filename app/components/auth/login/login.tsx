@@ -7,7 +7,7 @@ import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import { RxCross1 } from 'react-icons/rx';
 import z from 'zod';
 
-import loginUser from '@/app/actions/login';
+import { createClient } from '@/utils/supabase/client';
 
 export default function Login(): ReactNode {
   const router = useRouter();
@@ -41,15 +41,16 @@ export default function Login(): ReactNode {
   const handleSubmit = async (): Promise<void> => {
     setIsLoading(true);
 
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('password', password);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    const result = await loginUser(formData);
-
-    if (result?.error) {
+    if (error) {
       setIsLoading(false);
-      console.error(result.error);
+      setIsLoading(false);
+      // error.message
     } else {
       router.replace('/');
     }
@@ -141,13 +142,28 @@ export default function Login(): ReactNode {
             type="submit"
             size="md"
             variant="solid"
-            color="primary"
+            color={!isFormValid ? 'default' : 'primary'}
             radius="none"
             isDisabled={!isFormValid}
             className="mt-6"
           >
             {isLoading ? <Spinner color="default" /> : 'Login'}
           </Button>
+          <div className="grid grid-cols-2">
+            <Button type="button" size="md" variant="light" color="primary" radius="none">
+              Register an Account
+            </Button>
+            <Button
+              type="button"
+              size="md"
+              variant="light"
+              color="primary"
+              radius="none"
+              onPress={() => router.push('/')}
+            >
+              Back to Home
+            </Button>
+          </div>
         </form>
       </div>
     </section>
