@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation';
 import { ReactNode } from 'react';
 
 import { AuthProvider } from './contexts/auth-context';
+import { ToastProvider } from './contexts/toast-context';
 
 export function Providers({ children }: { children: React.ReactNode }): ReactNode {
   const router = useRouter();
 
   return (
     <AuthProvider>
-      <HeroUIProvider navigate={router.push}>{children}</HeroUIProvider>
+      <HeroUIProvider navigate={router.push}>
+        <ToastProvider>{children}</ToastProvider>
+      </HeroUIProvider>
     </AuthProvider>
   );
 }
