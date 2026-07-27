@@ -15,7 +15,7 @@ export default function Course(props: CourseProps): ReactNode {
   const { majorId, courseId } = props;
   const supabase = createClient();
 
-  const [course, setCourse] = useState<CourseType>();
+  const [course, setCourse] = useState<CourseType | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
 
   useEffect(() => {
@@ -51,10 +51,10 @@ export default function Course(props: CourseProps): ReactNode {
     <section className="flex flex-col justify-center p-8 font-bold">
       <h1 className="text-center text-3xl mb-4">{course.name}</h1>
       <div className="flex flex-col gap-4">
-        {exams.map((exam) => (
+        {exams.map((exam, index) => (
           <Link
             key={exam.id}
-            href={`/${majorId}/${courseId}/${exams[0]?.id}`}
+            href={`/${majorId}/${courseId}/${exams[index]?.id}`}
             className="border-1 rounded-sm p-3 hover:border-white hover:scale-102 hover:shadow-sm transition-all hover:bg-blue-600/70! hover:text-white font-normal hover:underline underline-offset-4"
           >
             {exam.name}

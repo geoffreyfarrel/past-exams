@@ -17,7 +17,7 @@ export default async function Major(props: MajorProps): Promise<ReactNode> {
   const supabase = createClient();
 
   const [major, courses]: [MajorType | null, Course[]] = await Promise.all([
-    MajorService.getMajorDetails(majorId, supabase),
+    MajorService.getMajorDetails(supabase, majorId),
     MajorService.getCoursesByMajor(majorId, supabase),
   ]);
 
@@ -49,7 +49,7 @@ export default async function Major(props: MajorProps): Promise<ReactNode> {
                   <Link
                     key={course.id}
                     href={`/${majorId}/${course.id}`}
-                    className="p-4 rounded-xl border bg-white hover:border-primary hover:shadow-sm transition-all"
+                    className="p-4 border hover:bg-primary/70 hover:border-none hover:text-white hover:scale-105 bg-white hover:border-primary hover:shadow-sm transition-all"
                   >
                     {course.name}
                   </Link>

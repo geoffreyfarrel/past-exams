@@ -65,10 +65,10 @@ export default function LayoutSidebar(props: LayoutSidebarProps): ReactNode {
       >
         <div className="flex flex-col h-full p-6 justify-between overflow-y-auto">
           <div className="flex flex-col">
-            <div className="mb-8">
+            <Link href="/" className="mb-8">
               <h2 className="text-xl font-black tracking-tighter italic">PASTEXAMS</h2>
               <p className="text-xs opacity-70">Student&apos;s Archive</p>
-            </div>
+            </Link>
 
             {pathname !== '/' && (
               <nav className="space-y-6 flex-1">
