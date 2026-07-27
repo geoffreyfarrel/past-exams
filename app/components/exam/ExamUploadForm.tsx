@@ -12,21 +12,27 @@ import {
 } from '@heroui/react';
 import { useRouter } from 'next/navigation';
 import React, { ChangeEvent, FormEvent, ReactElement, useEffect, useRef, useState } from 'react';
+import { IoArrowBackOutline } from 'react-icons/io5';
 
 import { getPresignedUploadUrl, saveExamMetadata } from '@/app/actions/upload-action';
-import { Major } from '@/app/types/database';
+import { useAuth } from '@/app/contexts/auth-context';
+import { useToast } from '@/app/contexts/toast-context';
+import { ExamTerm, Major } from '@/app/types/database';
 import { MajorService } from '@/services/major-service';
 import { createClient } from '@/utils/supabase/client';
 
 export function ExamUploadForm(): ReactElement {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { userId } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [courseId, setCourseId] = useState('');
+  const [courseName, setCourseName] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
-  const [semester, setSemester] = useState('Spring');
+  const [semester, setSemester] = useState('spring');
+  const [examTerm, setExamTerm] = useState<ExamTerm>(ExamTerm.MID);
   const [professorName, setProfessorName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   // Major and Course state
   const [majors, setMajors] = useState<Major[]>([]);
@@ -126,43 +132,48 @@ export function ExamUploadForm(): ReactElement {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       if (selectedFile.type !== 'application/pdf') {
-        setError('Only PDF files are allowed');
+        showToast('Only PDF files are allowed', 'error');
         setFile(null);
 
         return;
       }
 
       if (selectedFile.size > 10 * 1024 * 1024) {
-        setError('File size must be under 10MB');
+        showToast('File size must be under 10MB', 'error');
         setFile(null);
 
         return;
       }
 
-      setError('');
       setFile(selectedFile);
     }
   };
 
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
-    if (!file || !courseId || !year || !semester || !professorName) {
-      setError('Please fill in all fields and select a file.');
+    if (!file || !courseId || !year || !semester || !examTerm || !professorName) {
+      showToast('Please fill in all fields and select a file.', 'warning');
+
+      return;
+    }
+
+    if (!userId) {
+      showToast('You must be signed in to upload an exam.', 'error');
 
       return;
     }
 
     setLoading(true);
-    setError('');
+    const uploadName = `${year}_${semester}_${courseName}_${professorName}_${examTerm.toUpperCase()}.pdf`;
 
     try {
-      // 1. Get presigned URL
+      // 1. Get presigned upload URL
       const {
         success,
         uploadUrl,
         fileKey,
         error: presignedError,
-      } = await getPresignedUploadUrl(file.name, file.type, file.size);
+      } = await getPresignedUploadUrl(uploadName, file.type, file.size, courseId);
 
       if (!success || !uploadUrl || !fileKey) {
         throw new Error(presignedError || 'Failed to initialize upload');
@@ -183,37 +194,32 @@ export function ExamUploadForm(): ReactElement {
 
       // 3. Save metadata to Supabase
       const metaRes = await saveExamMetadata({
+        courseName: uploadName,
         courseId,
         year: Number(year),
         semester,
-        professorName,
+        term: examTerm,
         fileKey,
+        uploader_id: userId,
       });
 
       if (!metaRes.success) {
         throw new Error(metaRes.error || 'Failed to save exam details');
       }
 
-      // Success
-      alert('Exam uploaded successfully!');
-      router.push('/exams');
+      showToast('Exam uploaded successfully!', 'success');
+      router.push(`/`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      showToast(err instanceof Error ? err.message : 'An unexpected error occurred', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card className="max-w-2xl mx-auto mt-8 border border-default-200">
+    <Card radius="none" className="max-w-2xl mx-auto mt-8 border border-default-200">
       <CardBody className="p-8">
         <h2 className="text-2xl font-bold mb-6">Upload Past Exam</h2>
-
-        {error && (
-          <div className="bg-danger-50 text-danger-600 p-4 rounded-lg mb-6 border border-danger-200">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Autocomplete
@@ -225,6 +231,7 @@ export function ExamUploadForm(): ReactElement {
             onSelectionChange={(key): void => {
               setSelectedMajorId((key as string) ?? '');
               setCourseId(''); // Reset course when major changes
+              setCourseName('');
               setCourseSearch('');
               setCoursePage(0);
             }}
@@ -246,7 +253,12 @@ export function ExamUploadForm(): ReactElement {
             isDisabled={!selectedMajorId}
             onInputChange={handleCourseSearchChange}
             selectedKey={courseId}
-            onSelectionChange={(key): void => setCourseId((key as string) || '')}
+            onSelectionChange={(key): void => {
+              const id = (key as string) || '';
+
+              setCourseId(id);
+              setCourseName(courses.find((c) => c.id === id)?.name ?? '');
+            }}
             isRequired
             variant="bordered"
             listboxProps={{
@@ -282,19 +294,32 @@ export function ExamUploadForm(): ReactElement {
               isRequired
               variant="bordered"
             >
-              <SelectItem key="Spring">Spring/1</SelectItem>
-              <SelectItem key="Fall">Fall/2</SelectItem>
+              <SelectItem key="spring">Spring/1</SelectItem>
+              <SelectItem key="fall">Fall/2</SelectItem>
             </Select>
           </div>
 
-          <Input
-            label="Professor Name"
-            placeholder="e.g., Dr. Smith"
-            value={professorName}
-            onValueChange={setProfessorName}
-            isRequired
-            variant="bordered"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Exam Term"
+              placeholder="Select term"
+              selectedKeys={examTerm ? [examTerm] : []}
+              onChange={(e): void => setExamTerm(e.target.value as ExamTerm)}
+              isRequired
+              variant="bordered"
+            >
+              <SelectItem key={ExamTerm.MID}>Midterm</SelectItem>
+              <SelectItem key={ExamTerm.FINAL}>Final</SelectItem>
+            </Select>
+            <Input
+              label="Professor Name"
+              placeholder="e.g., 林宏祥"
+              value={professorName}
+              onValueChange={setProfessorName}
+              isRequired
+              variant="bordered"
+            />
+          </div>
 
           <div className="pt-2">
             <label className="block text-sm font-medium text-default-700 mb-2">
@@ -319,9 +344,20 @@ export function ExamUploadForm(): ReactElement {
             type="submit"
             className="w-full mt-8"
             isLoading={loading}
-            size="lg"
+            size="md"
           >
             Upload Exam
+          </Button>
+          <Button
+            color="primary"
+            type="button"
+            variant="bordered"
+            size="md"
+            className="w-full mb-4"
+            startContent={<IoArrowBackOutline />}
+            onPress={() => router.back()}
+          >
+            Back
           </Button>
         </form>
       </CardBody>

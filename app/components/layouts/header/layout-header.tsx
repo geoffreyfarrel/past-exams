@@ -64,6 +64,7 @@ export default function LayoutHeader({ onMenuToggle }: LayoutHeaderProps): React
   const onLogout = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    router.push('/');
     router.refresh();
   }, [router]);
 
@@ -106,25 +107,29 @@ export default function LayoutHeader({ onMenuToggle }: LayoutHeaderProps): React
         <NavbarContent className="w-12" justify="end">
           {profile ? (
             <div className="flex flex-row gap-2 items-center">
-              <Button
-                isIconOnly
-                variant="ghost"
-                color="primary"
-                onPress={() => router.push('/')}
-                className="sm:hidden"
-                aria-label="Upload"
-              >
-                <IoCloudUploadOutline className="text-xl" />
-              </Button>
-              <Button
-                variant="ghost"
-                color="primary"
-                onPress={() => router.push('/upload')}
-                className="hidden sm:flex items-center"
-                startContent={<IoCloudUploadOutline className="text-xl shrink-0" />}
-              >
-                Upload
-              </Button>
+              {profile.role === 'admin' && (
+                <>
+                  <Button
+                    isIconOnly
+                    variant="ghost"
+                    color="primary"
+                    onPress={() => router.push('/')}
+                    className="sm:hidden"
+                    aria-label="Upload"
+                  >
+                    <IoCloudUploadOutline className="text-xl" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    color="primary"
+                    onPress={() => router.push('/upload')}
+                    className="hidden sm:flex items-center"
+                    startContent={<IoCloudUploadOutline className="text-xl shrink-0" />}
+                  >
+                    Upload
+                  </Button>
+                </>
+              )}
               <Dropdown>
                 <DropdownTrigger className="hover:cursor-pointer">
                   <User
@@ -162,7 +167,7 @@ export default function LayoutHeader({ onMenuToggle }: LayoutHeaderProps): React
               variant="solid"
               color="primary"
               startContent={<MdOutlineLogin className="text-xl shrink-0" />}
-              radius="sm"
+              radius="md"
               className="flex items-center"
               onPress={() => router.push('/auth/login')}
             >

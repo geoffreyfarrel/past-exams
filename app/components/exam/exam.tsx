@@ -1,5 +1,7 @@
-import { Spinner } from '@heroui/react';
+import { Button, Spinner } from '@heroui/react';
+import { useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
+import { IoArrowBack } from 'react-icons/io5';
 
 import { getExamDownloadUrl } from '@/app/actions/exams';
 import { Exam as ExamType } from '@/app/types/database';
@@ -18,6 +20,7 @@ export default function Exam(props: ExamProps): ReactNode {
   const [exam, setExam] = useState<ExamType | null>(null);
 
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     if (courseId && examId) {
@@ -53,9 +56,19 @@ export default function Exam(props: ExamProps): ReactNode {
 
   return (
     <div>
-      <h2 className="font-bold text-3xl uppercase mb-4 text-center">
-        {exam?.course_id} - {exam?.year} {exam?.semester}
-      </h2>
+      <div className="flex flex-row items-center">
+        <Button
+          variant="link"
+          size="lg"
+          type="button"
+          onPress={() => router.back()}
+          aria-label="Go back"
+          className="flex items-center gap-1 mb-4 text-sm font-normal hover:underline"
+        >
+          <IoArrowBack size="lg" />
+        </Button>
+        <h2 className="font-bold text-3xl uppercase mb-4 text-center">{exam?.name}</h2>
+      </div>
       {pdfUrl && (
         <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-2xl relative">
           <iframe src={pdfUrl} className="w-full h-screen" title="Exam Viewer" />

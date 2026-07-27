@@ -14,8 +14,8 @@ type GetSignedUrlResponse = {
 export async function getExamDownloadUrl(fileKey: string): Promise<GetSignedUrlResponse> {
   try {
     const command = new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET!,
-      Key: `pastexams/${fileKey}`,
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: fileKey,
       ResponseContentDisposition: 'inline',
     });
 
@@ -40,7 +40,7 @@ export async function getExamsByCourse(courseId: string): Promise<{ data: any; e
       semester, 
       file_key, 
       file_type,
-      profiles (nickname) 
+      profiles (username)
     `,
     )
     .eq('course_id', courseId)

@@ -18,6 +18,16 @@ export default async function UploadPage(): Promise<ReactNode> {
     redirect('/auth/login?redirect=/upload');
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') {
+    redirect('/');
+  }
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
       <div className="text-center mb-8">
